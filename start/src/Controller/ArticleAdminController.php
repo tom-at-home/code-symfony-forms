@@ -9,7 +9,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 class ArticleAdminController extends AbstractController
@@ -43,12 +42,31 @@ class ArticleAdminController extends AbstractController
     }
 
     /**
-     * @Route("/admin/article/{id}/edit")
+     * @Route("/admin/article/{id}/edit", name="admin_article_edit")
      * @IsGranted("MANAGE", subject="article")
      */
-    public function edit(Article $article)
+    public function edit(Article $article, Request $request, EntityManagerInterface $em)
     {
-        dd($article);
+        $form = $this->createForm(ArticleFormType::class, $article);
+
+        $form->handleRequest($request);
+        if($form->isSubmitted() && $form->isValid()){
+            /** @var Article $data */
+
+            $em->persist($article);
+            $em->flush();
+
+            $this->addFlash('success', 'Your Article was updated!');
+
+            return $this->redirectToRoute('admin_article_edit', [
+                'id' => $article->getId()
+            ] );
+        }
+
+
+        return $this->render('article_admin/edit.html.twig', [
+            'articleForm' => $form->createView(),
+        ]);
     }
 
     /**
