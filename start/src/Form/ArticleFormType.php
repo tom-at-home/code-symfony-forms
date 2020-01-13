@@ -12,6 +12,9 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class ArticleFormType extends AbstractType
@@ -67,6 +70,17 @@ class ArticleFormType extends AbstractType
             ]);
         }
 
+        $builder->get('location')->addEventListener(
+            FormEvents::POST_SUBMIT,
+            function(FormEvent $event) {
+                $form = $event->getForm();
+                $this->setupSpecificLocationNameField(
+                    $form->getParent(),
+                    $form->getData()
+                );
+            }
+        );
+
     }
 
     public function configureOptions(OptionsResolver $resolver)
@@ -104,6 +118,27 @@ class ArticleFormType extends AbstractType
             'interstellar_space' => null,
         ];
         return $locationNameChoices[$location];
+    }
+
+    public function setupSpecificLocationNameField(FormInterface $form, ?string $location)
+    {
+        if(null === $location){
+            $form->remove('specificLocationName');
+            return;
+        }
+
+        $choices = $this->getLocationNameChoices($location);
+
+        if(null === $choices){
+            $form->remove('specificLocationName');
+            return;
+        }
+
+        $form->add('specificLocationName', ChoiceType::class, [
+            'placeholder' => 'Where exactly?',
+            'choices' => $choices,
+            'required' => false
+        ]);
     }
 
 }
